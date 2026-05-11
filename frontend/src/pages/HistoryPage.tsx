@@ -10,6 +10,12 @@ const tierBadge: Record<Scan['verdict']['tier'], string> = {
   unhealthy: 'text-rose-700 bg-rose-50 border-rose-200',
 };
 
+const tierLabel: Record<Scan['verdict']['tier'], string> = {
+  healthy: 'Sehat',
+  moderate: 'Cukup',
+  unhealthy: 'Tidak Sehat',
+};
+
 export default function HistoryPage() {
   const [scans, setScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,25 +38,25 @@ export default function HistoryPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this scan?')) return;
+    if (!confirm('Hapus pindaian ini?')) return;
     await api.remove(id);
     load();
   };
 
-  if (loading) return <p className="text-slate-500">Loading…</p>;
+  if (loading) return <p className="text-slate-500">Memuat…</p>;
   if (error) return <p className="text-rose-600">{error}</p>;
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">History</h1>
+      <h1 className="text-2xl font-semibold">Riwayat</h1>
 
       {scans.length === 0 ? (
         <div className="bg-white border rounded-xl p-8 text-center text-slate-500">
-          No scans yet.{' '}
+          Belum ada pindaian.{' '}
           <Link to="/" className="text-emerald-700 hover:underline">
-            Scan a label
+            Pindai label
           </Link>{' '}
-          to get started.
+          untuk mulai.
         </div>
       ) : (
         <ul className="space-y-3">
@@ -69,21 +75,21 @@ export default function HistoryPage() {
                   to={`/scan/${scan.id}`}
                   className="font-medium hover:underline truncate block"
                 >
-                  {scan.productName ?? 'Unknown product'}
+                  {scan.productName ?? 'Produk tidak dikenal'}
                 </Link>
                 <p className="text-xs text-slate-500">
-                  {new Date(scan.createdAt).toLocaleString()}
+                  {new Date(scan.createdAt).toLocaleString('id-ID')}
                 </p>
               </div>
               <span
                 className={`text-xs px-2 py-1 rounded border font-medium ${tierBadge[scan.verdict.tier]}`}
               >
-                {scan.verdict.tier} · {scan.verdict.score}
+                {tierLabel[scan.verdict.tier]} · {scan.verdict.score}
               </span>
               <button
                 onClick={() => handleDelete(scan.id)}
                 className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
-                aria-label="Delete scan"
+                aria-label="Hapus pindaian"
               >
                 <Trash2 size={16} />
               </button>

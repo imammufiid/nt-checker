@@ -23,9 +23,11 @@ export default function ResultPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <p className="text-slate-500">Loading…</p>;
+  if (loading) return <p className="text-slate-500">Memuat…</p>;
   if (error || !scan)
-    return <p className="text-rose-600">{error ?? 'Not found'}</p>;
+    return (
+      <p className="text-rose-600">{error ?? 'Data tidak ditemukan'}</p>
+    );
 
   const severityColor = {
     low: 'text-slate-600',
@@ -39,7 +41,7 @@ export default function ResultPage() {
         to="/"
         className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900"
       >
-        <ArrowLeft size={16} /> Back
+        <ArrowLeft size={16} /> Kembali
       </Link>
 
       {scan.productName && (
@@ -50,12 +52,12 @@ export default function ResultPage() {
 
       <div className="grid md:grid-cols-2 gap-5">
         <section className="bg-white border rounded-xl p-5">
-          <h3 className="font-semibold mb-3">Nutrition (per serving)</h3>
+          <h3 className="font-semibold mb-3">Info Gizi (per sajian)</h3>
           <NutritionTable nutrition={scan.nutrition} />
         </section>
 
         <section className="bg-white border rounded-xl p-5">
-          <h3 className="font-semibold mb-3">Ingredients</h3>
+          <h3 className="font-semibold mb-3">Daftar Bahan</h3>
           {scan.ingredients.length > 0 ? (
             <ol className="list-decimal list-inside text-sm space-y-1">
               {scan.ingredients.map((ing, i) => (
@@ -65,14 +67,16 @@ export default function ResultPage() {
               ))}
             </ol>
           ) : (
-            <p className="text-sm text-slate-500">No ingredients detected.</p>
+            <p className="text-sm text-slate-500">
+              Daftar bahan tidak berhasil dibaca.
+            </p>
           )}
         </section>
       </div>
 
       {scan.redFlagIngredients && scan.redFlagIngredients.length > 0 && (
         <section className="bg-white border rounded-xl p-5">
-          <h3 className="font-semibold mb-3">Red flags</h3>
+          <h3 className="font-semibold mb-3">Perlu Diwaspadai</h3>
           <ul className="space-y-2">
             {scan.redFlagIngredients.map((rf, i) => (
               <li key={i} className="text-sm">
@@ -87,10 +91,10 @@ export default function ResultPage() {
       )}
 
       <section className="bg-white border rounded-xl p-5">
-        <h3 className="font-semibold mb-3">Scanned image</h3>
+        <h3 className="font-semibold mb-3">Foto yang Dianalisis</h3>
         <img
           src={scan.imageUrl}
-          alt="Scanned label"
+          alt="Label yang dipindai"
           className="max-w-full max-h-96 rounded-lg border"
         />
       </section>

@@ -15,7 +15,7 @@ export default function HomePage() {
       const scan = await api.upload(file);
       navigate(`/scan/${scan.id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Upload failed');
+      setError(e instanceof Error ? e.message : 'Gagal mengunggah foto');
     } finally {
       setBusy(false);
     }
@@ -24,10 +24,12 @@ export default function HomePage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold">Is this food healthy?</h1>
+        <h1 className="text-2xl font-semibold">
+          Makanan ini sehat atau tidak?
+        </h1>
         <p className="text-slate-600 mt-1">
-          Scan a nutrition label or ingredient list — get an instant health
-          verdict.
+          Foto label gizi atau daftar bahan di kemasan — kami bantu jelaskan
+          dalam bahasa yang mudah dipahami.
         </p>
       </div>
 
@@ -35,7 +37,7 @@ export default function HomePage() {
 
       {busy && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 p-3 text-sm">
-          Analyzing label with Claude… this usually takes 5–15 seconds.
+          Sedang menganalisis label… biasanya butuh 5–15 detik.
         </div>
       )}
 

@@ -1,14 +1,14 @@
 const LABELS: Record<string, string> = {
-  calories: 'Calories',
-  total_fat_g: 'Total Fat (g)',
-  saturated_fat_g: 'Saturated Fat (g)',
-  trans_fat_g: 'Trans Fat (g)',
-  cholesterol_mg: 'Cholesterol (mg)',
-  sodium_mg: 'Sodium (mg)',
-  total_carbs_g: 'Total Carbs (g)',
-  fiber_g: 'Fiber (g)',
-  sugar_g: 'Sugar (g)',
-  added_sugar_g: 'Added Sugar (g)',
+  calories: 'Kalori',
+  total_fat_g: 'Lemak Total (g)',
+  saturated_fat_g: 'Lemak Jenuh (g)',
+  trans_fat_g: 'Lemak Trans (g)',
+  cholesterol_mg: 'Kolesterol (mg)',
+  sodium_mg: 'Garam / Natrium (mg)',
+  total_carbs_g: 'Karbohidrat Total (g)',
+  fiber_g: 'Serat (g)',
+  sugar_g: 'Gula (g)',
+  added_sugar_g: 'Gula Tambahan (g)',
   protein_g: 'Protein (g)',
 };
 
@@ -24,7 +24,9 @@ export default function NutritionTable({ nutrition }: Props) {
 
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-slate-500">No nutrition data extracted.</p>
+      <p className="text-sm text-slate-500">
+        Data gizi tidak berhasil dibaca dari foto.
+      </p>
     );
   }
 

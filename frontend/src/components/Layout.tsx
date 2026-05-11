@@ -22,10 +22,10 @@ export default function Layout() {
           </Link>
           <nav className="flex items-center gap-1">
             <NavLink to="/" end className={linkClass}>
-              <Upload size={16} /> Scan
+              <Upload size={16} /> Pindai
             </NavLink>
             <NavLink to="/history" className={linkClass}>
-              <History size={16} /> History
+              <History size={16} /> Riwayat
             </NavLink>
           </nav>
         </div>
