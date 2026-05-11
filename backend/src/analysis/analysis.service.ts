@@ -51,7 +51,7 @@ export class AnalysisService {
           {
             ...NUTRITION_TOOL,
             cache_control: { type: 'ephemeral' },
-          } as unknown as Anthropic.Messages.Tool,
+          },
         ],
         tool_choice: {
           type: 'tool',
