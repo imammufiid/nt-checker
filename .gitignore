@@ -1,0 +1,4 @@
+.DS_Store
+*.log
+
+# Inherits more specific .gitignore from backend/ and frontend/
