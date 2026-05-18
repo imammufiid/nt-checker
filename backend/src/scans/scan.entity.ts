@@ -3,7 +3,11 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
 } from 'typeorm';
+import { User } from '../users/user.entity';
 
 export type VerdictTier = 'healthy' | 'moderate' | 'unhealthy';
 
@@ -21,9 +25,20 @@ export interface RedFlag {
 }
 
 @Entity('scans')
+@Index('idx_scans_user_created', ['userId', 'createdAt'])
 export class Scan {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  // BE-001: nullable on the column to allow the boot-time backfill to seed a
+  // "legacy" user without data loss; service layer treats this as NOT NULL
+  // for newly-created scans (BE-007, later wave).
+  @Column({ type: 'uuid', nullable: true })
+  userId: string | null;
+
+  @ManyToOne(() => User, (u) => u.scans, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'userId' })
+  user: User | null;
 
   @Column({ type: 'text', nullable: true })
   productName: string | null;

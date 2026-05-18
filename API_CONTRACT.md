@@ -126,12 +126,13 @@ POST /auth/signup
     },
     "tokens": {
       "access_token": "eyJ...",
-      "refresh_token": "eyJ...",
       "expires_in": 900
     }
   }
 }
 ```
+
+**Note:** the refresh token is delivered as an `HttpOnly; Secure; SameSite=Strict; Path=/auth` cookie (`nt_refresh`), not in the JSON body. The browser carries it back to `POST /auth/refresh` and `POST /auth/logout` automatically. JS cannot read it (per [`docs/THREAT_MODEL.md`](./docs/THREAT_MODEL.md) §7).
 
 ### 2.2 Login
 
@@ -155,12 +156,7 @@ POST /auth/login
 POST /auth/refresh
 ```
 
-**Request:**
-```json
-{
-  "refresh_token": "eyJ..."
-}
-```
+**Request:** No body required. The `nt_refresh` httpOnly cookie carries the refresh token automatically. A `{ "refresh_token": "..." }` body is accepted as a fallback for non-browser clients but is not the primary path.
 
 **Response (200):**
 ```json
