@@ -37,31 +37,31 @@ Total tasks: **BE 13 · FE 12 · AI 4 · QA 6 · SEC 5 · = 40**.
 
 ## Backend tasks (BE)
 
-- [ ] **[BE-001]** Add `User` entity + migration (id, email unique, password_hash, name, created_at, subscription_tier default `free`)
+- [x] **[BE-001]** Add `User` entity + migration (id, email unique, password_hash, name, created_at, subscription_tier default `free`)
   - Owner: be-engineer
   - Depends on: none
   - Acceptance: TypeORM entity exists; migration applies on a fresh DB and on the existing MVP DB without data loss for existing `scans` (add `user_id` column nullable, backfill to a seeded "legacy" user); `users` table has a unique index on `email`.
   - Effort: M
 
-- [ ] **[BE-002]** Implement signup endpoint (`POST /auth/signup`)
+- [x] **[BE-002]** Implement signup endpoint (`POST /auth/signup`)
   - Owner: be-engineer
   - Depends on: BE-001, SEC-001
   - Acceptance: matches `API_CONTRACT.md` §2.1; password hashed via bcrypt (cost ≥ 10); returns access + refresh tokens; duplicate email returns 409 `DUPLICATE_EMAIL`.
   - Effort: M
 
-- [ ] **[BE-003]** Implement login endpoint (`POST /auth/login`)
+- [x] **[BE-003]** Implement login endpoint (`POST /auth/login`)
   - Owner: be-engineer
   - Depends on: BE-002
   - Acceptance: matches §2.2; bcrypt-compare on submitted password; returns same token shape as signup; wrong credentials return 401 `UNAUTHORIZED` (no user-existence leak in the error message).
   - Effort: S
 
-- [ ] **[BE-004]** Implement JWT auth middleware + `/auth/refresh` + `/auth/logout`
+- [x] **[BE-004]** Implement JWT auth middleware + `/auth/refresh` + `/auth/logout`
   - Owner: be-engineer
   - Depends on: BE-003, SEC-002
   - Acceptance: Bearer token verified on every non-`/auth/*` and non-`/health` route per `API_CONTRACT.md` §1.1; refresh tokens stored server-side (DB table or Redis-equivalent — SQLite table acceptable for M1); `/auth/logout` invalidates the refresh token and a subsequent refresh returns 401.
   - Effort: M
 
-- [ ] **[BE-005]** Implement user profile endpoints (`GET/PATCH /users/me`, `GET/PUT /users/me/profile`)
+- [x] **[BE-005]** Implement user profile endpoints (`GET/PATCH /users/me`, `GET/PUT /users/me/profile`)
   - Owner: be-engineer
   - Depends on: BE-004
   - Acceptance: shapes match `API_CONTRACT.md` §3.1–§3.4; invalid enum values for `gender`, `activity_level`, `conditions`, `allergies`, `goals` return 400 `INVALID_INPUT`; profile persists per user; null/missing fields permitted.
@@ -119,19 +119,19 @@ Total tasks: **BE 13 · FE 12 · AI 4 · QA 6 · SEC 5 · = 40**.
 
 ## Frontend tasks (FE)
 
-- [ ] **[FE-001]** Build signup / login / logout flows in Bahasa Indonesia
+- [x] **[FE-001]** Build signup / login / logout flows in Bahasa Indonesia
   - Owner: fe-engineer
   - Depends on: BE-002, BE-003, BE-004
   - Acceptance: routes `/daftar`, `/masuk`, `/keluar` exist; forms validate client-side (email format, password ≥ 8 chars); tokens stored in httpOnly cookie OR localStorage with documented tradeoff (security-engineer reviews choice); after signup, user lands on profile-setup screen.
   - Effort: M
 
-- [ ] **[FE-002]** Add auth context + protected-route wrapper + token refresh
+- [x] **[FE-002]** Add auth context + protected-route wrapper + token refresh
   - Owner: fe-engineer
   - Depends on: FE-001
   - Acceptance: React context exposes `{ user, accessToken, login, logout }`; any 401 response from API triggers refresh, retries the original request once, falls back to logout; unauthenticated visit to a protected route redirects to `/masuk` with a return-URL param.
   - Effort: M
 
-- [ ] **[FE-003]** Profile setup screen (age, gender, weight, height, activity, conditions, allergies)
+- [x] **[FE-003]** Profile setup screen (age, gender, weight, height, activity, conditions, allergies)
   - Owner: fe-engineer
   - Depends on: BE-005, FE-002
   - Acceptance: form in Bahasa Indonesia covers every field from `API_CONTRACT.md` §3.3; conditions and allergies are multi-select chips; saving calls `PUT /users/me/profile`; supports partial save (skip optional fields).
@@ -179,7 +179,7 @@ Total tasks: **BE 13 · FE 12 · AI 4 · QA 6 · SEC 5 · = 40**.
   - Acceptance: anonymous user can perform one scan; result page shows the verdict; saving the scan or seeing history triggers a "Daftar untuk simpan" modal. *Hold this task until PM resolves Open Question #1; do not start until then.*
   - Effort: M
 
-- [ ] **[FE-011]** Replace the global header/nav with auth-aware nav (Beranda, Hari ini, Riwayat, Profil)
+- [x] **[FE-011]** Replace the global header/nav with auth-aware nav (Beranda, Hari ini, Riwayat, Profil)
   - Owner: fe-engineer
   - Depends on: FE-002, FE-007
   - Acceptance: signed-out users see only Beranda + Masuk/Daftar; signed-in users see the four-item nav; active route highlighted; works on mobile (≤ 375px).
@@ -229,7 +229,7 @@ Total tasks: **BE 13 · FE 12 · AI 4 · QA 6 · SEC 5 · = 40**.
   - Acceptance: Playwright or equivalent script runs the full happy path against a fresh DB; passes on CI; takes < 90s; mocks the Claude call with a fixture response.
   - Effort: M
 
-- [ ] **[QA-002]** Manual test pass on auth + multi-user isolation
+- [x] **[QA-002]** Manual test pass on auth + multi-user isolation
   - Owner: qa-engineer
   - Depends on: BE-007
   - Acceptance: with two test accounts A and B, verify: A's scans never appear in B's history; A cannot GET or DELETE B's scan_id (returns 404); A's daily progress excludes B's scans; logout invalidates refresh.
