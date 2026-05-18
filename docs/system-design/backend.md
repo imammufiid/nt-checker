@@ -568,33 +568,94 @@ New env vars (additions to `backend/.env.example`). Variables marked **required-
 
 ---
 
-## 11. Open Questions & Risks
+## 11. Testing
 
-### 11.1 SQLite → Postgres timing
+Authoritative inventory lives in [`docs/TEST_PLAN.md`](../TEST_PLAN.md) (owned by qa-engineer). This section anchors what be-engineer is on the hook for while implementing M1, so the testing expectations don't drift between docs.
+
+### 11.1 Tooling
+
+Jest + `@nestjs/testing` + Supertest (per [TEST_PLAN.md §3.1](../TEST_PLAN.md)). Install in `backend/`:
+
+```
+npm install -D jest @types/jest ts-jest @nestjs/testing supertest @types/supertest
+```
+
+Add `"test": "jest"` and `"test:e2e": "jest --config ./test/jest-e2e.json"` to `backend/package.json`. **No real Anthropic calls in tests** — mock `AnalysisService` at the Nest DI boundary; never the SDK directly.
+
+### 11.2 Convention
+
+- **Unit tests** live alongside the source they cover: `backend/src/**/*.spec.ts`.
+- **HTTP integration tests** live in `backend/test/*.e2e-spec.ts`, one per controller, using Supertest against an in-memory SQLite (`:memory:`) and a fixture-returning `AnalysisService`.
+- Engineers write their unit tests **in the same PR as the feature code**. QA reviews integration coverage before closing the task.
+
+### 11.3 Unit-test files this milestone (BE)
+
+Each entry maps a M1 module to its expected unit-test file. Full test cases — golden, error-paths, and boundary conditions — are enumerated in [TEST_PLAN.md §6.1](../TEST_PLAN.md) and §8.
+
+| Module / task                       | Unit-test file                                       | What it covers |
+|-------------------------------------|------------------------------------------------------|----------------|
+| Scoring (existing, extended)        | `backend/src/analysis/scoring.spec.ts`               | Pure tier+score function; sugar/sodium/sat-fat/trans-fat/fiber boundaries (TEST_PLAN §8) |
+| AnalysisService user-message build  | `backend/src/analysis/analysis.service.spec.ts`      | Profile/goal inclusion logic in the Claude user message; `messages.create` mocked |
+| BMR + activity multiplier (BE-006)  | `backend/src/users/bmr.spec.ts`                      | Mifflin–St Jeor calc; missing-field and out-of-range handling |
+| Macro suggestion (BE-006)           | `backend/src/users/macro-suggest.spec.ts`            | goal_type → C/P/F split sums to target kcal ±2% |
+| Profile DTO (BE-005)                | `backend/src/users/profile.dto.spec.ts`              | class-validator: valid full, invalid enums, nulls, extra fields stripped |
+| Goal DTO (BE-006)                   | `backend/src/users/goal.dto.spec.ts`                 | class-validator: valid, negative kcal rejected, bad enum rejected |
+| Progress status (BE-009)            | `backend/src/progress/progress-status.spec.ts`       | <90% / 90-110% / >110% boundary, no_goal, zero totals |
+| Remaining budget (BE-009)           | `backend/src/progress/remaining-budget.spec.ts`      | Clamped at 0 (not negative); empty day; over-target |
+| Day-boundary timezone (BE-009, §12.4 OQ) | `backend/src/common/timezone.spec.ts`           | 23:55 vs 00:05 WIB; UTC drift |
+| Create-scan DTO (BE-008)            | `backend/src/scans/dto/create-scan.dto.spec.ts`      | Multipart validation; oversize; wrong mimetype; `personalize` coercion |
+
+### 11.4 Integration-test files (BE)
+
+One `*.e2e-spec.ts` per controller. Cases enumerated in [TEST_PLAN.md §6.2](../TEST_PLAN.md). Required coverage:
+
+| File                                | Controller                                       |
+|-------------------------------------|--------------------------------------------------|
+| `backend/test/auth.e2e-spec.ts`     | AuthController (signup/login/refresh/logout)     |
+| `backend/test/auth-guard.e2e-spec.ts` | JwtAuthGuard on protected routes               |
+| `backend/test/users.e2e-spec.ts`    | UsersController + ProfileController              |
+| `backend/test/goals.e2e-spec.ts`    | GoalsController                                  |
+| `backend/test/scans.e2e-spec.ts`    | ScansController (incl. quota guard + IDOR cases) |
+| `backend/test/progress.e2e-spec.ts` | ProgressController                               |
+| `backend/test/reanalyze.e2e-spec.ts`| `POST /scans/:id/reanalyze` — assert no vision call |
+
+### 11.5 Acceptance gate per BE task
+
+A BE task is not "done" until:
+1. Build is clean (`npm run build`).
+2. The task's unit tests are written and green.
+3. The task's integration cases in [TEST_PLAN.md §5](../TEST_PLAN.md)'s coverage map are green (or assigned to qa-engineer with a tracked follow-up).
+4. The error envelope from [`API_CONTRACT.md`](../../API_CONTRACT.md) §1.3 is exercised at least once per new controller method.
+
+---
+
+## 12. Open Questions & Risks
+
+### 12.1 SQLite → Postgres timing
 
 We're sticking with SQLite per the role definition and `synchronize: true` per §4. The risk: once we have real users, the cost of a Postgres migration grows linearly with data volume, and any unique constraint we miss in SQLite (which is permissive about implicit type coercion on indexes) will become a Postgres-side bug. Mitigation: keep all queries in the TypeORM query builder / repository (no raw SQL), and run a smoke test against a Postgres dev DB once before milestone end. This is a soft "ship the milestone" risk, not a hard blocker.
 
-### 11.2 Image-hash dedup scope
+### 12.2 Image-hash dedup scope
 
 We **store** `imageHash` on every new scan (§3.4) but we do NOT check it on `POST /scans` in M1. The PRD explicitly defers dedup (§2.2). The risk: a user spamming the same image bleeds Claude budget. Mitigation: BE-013's 20-scans/day cap is the cost ceiling for M1. The hash is forward-compat — when M2 turns dedup on, we already have the column populated. Open question: should we ALSO check the hash on `POST /scans/:id/reanalyze` to short-circuit re-rescoring? Probably no — reanalyze is a no-vision-call by design (BE-010 AC), so the cost is negligible and we'd risk masking a profile-change behavior.
 
-### 11.3 Soft-delete vs hard-delete on user deletion
+### 12.3 Soft-delete vs hard-delete on user deletion
 
 Currently every FK is `ON DELETE CASCADE`, meaning deleting a user removes all their scans, profile, goal, and refresh tokens. The PRD does not yet specify a user-deletion endpoint (DELETE /users/me is out of M1 scope per task list), so this is a forward question. Tradeoff: hard-delete is GDPR-friendly and simpler but loses audit ability; soft-delete (an `isDeleted` flag) preserves history but bleeds disk and risks accidental re-disclosure. Default for M1: cascade-hard-delete in the schema, and **defer building the user-deletion endpoint to M2** so we don't ship it half-baked. If product wants self-service deletion sooner, the soft-delete decision is the gating call.
 
-### 11.4 Timezone source for "today" (PRD Open Question §8.2)
+### 12.4 Timezone source for "today" (PRD Open Question §8.2)
 
 The progress endpoint defaults `date` to "the user's local today" — but we don't store a user timezone yet. M1 fallback: trust an optional `X-User-Timezone` IANA-name header from the FE; fall back to `Asia/Jakarta` (WIB) if absent. Risk: an Andi in Makassar (WITA) gets a one-hour-shifted "today" on edge-of-day scans. Long-term fix: add `timezone` to `User` (or `UserProfile`) — but that needs a UI affordance and PM approval, so it's an explicit M2 item. **This is the biggest open question on the data model.**
 
-### 11.5 Goal change mid-day (PRD Open Question §8)
+### 12.5 Goal change mid-day (PRD Open Question §8)
 
 BE-012 stores a `goalSnapshot` at scan-time. If the user changes their goal at 2pm: scans from 8am–2pm carry the morning goal in their snapshot; scans from 2pm onward carry the afternoon goal. The progress query picks the snapshot from "the most recent scan whose snapshot is non-null" (§7.2). For a day with scans on both sides of the change, that's the *afternoon* goal, which means the morning's totals get graded against the afternoon's target. This is mildly wrong but the simplest defensible rule. Alternative: pick the snapshot from the **first** scan of the day (morning's goal wins for today). PM Open Question §8 leans toward "new goal applies from now, today's snapshot freezes at end of day" — confirm before launch; the difference is one line in `ProgressService.getDaily`.
 
-### 11.6 Refresh token cookie + non-browser clients
+### 12.6 Refresh token cookie + non-browser clients
 
 The httpOnly-cookie design is browser-first. If a future mobile client (React Native, per PRD §2.2 non-goals — but eventually) can't easily handle cookies, we'd need a JSON-body fallback for `/auth/refresh` and `/auth/logout`. The `RefreshDto` already supports an optional body — but using it loses the SameSite=Strict CSRF protection, so it must be paired with another defense (e.g., requiring a CSRF header that JS-controlled clients can set but cross-site forms can't). Defer the actual decision until mobile work begins; document the constraint here.
 
-### 11.7 Re-analyze quota and cost throttling (PRD Open Question §5)
+### 12.7 Re-analyze quota and cost throttling (PRD Open Question §5)
 
 BE-010 is no-vision (rescore-only), so the cost is the Anthropic *text* path price, not the vision price — call it < $0.001/call. Even FE-009's "re-analyze last 7 days" is ~30 calls × $0.001 = $0.03. We won't quota this in M1; if a user really wants to spam reanalyze, they can. Risk acknowledged: a script kiddie could fire 100k reanalyze calls and burn ~$100/day. Mitigation: keep BE-013's per-day scan quota AND add a soft "reanalyze cooldown" of 1 call per scan per minute. Implement only if observed in logs.
 

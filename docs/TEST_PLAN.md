@@ -28,7 +28,8 @@ This plan does **not** cover ai-engineer's eval set (`AI-004`) — that's qualit
                 ├──────────────────────────────────┤
                 │   HTTP integration (Supertest)   │   ~7 files; one per controller, AnalysisService mocked
                 ├──────────────────────────────────┤
-                │   Unit tests (Jest / Vitest)     │   scoring rules, BMR/macro suggest, DTOs, utils
+                │   Unit tests (Jest / Vitest)     │   BE: scoring, BMR, macro-suggest, DTOs, progress, timezone (10 files)
+                │                                  │   FE: goalMath, dateGroup, imageResize, api, auth-context (5 files)
                 └──────────────────────────────────┘
 ```
 
@@ -238,6 +239,9 @@ All paths under `frontend/src/`. Tests assert against Bahasa Indonesia strings.
 | `frontend/src/components/NutritionTable.test.tsx` | Macro table | All macro fields render in BI; zero-value fields render "0"; missing field renders "—"; `vitamins_minerals[]` not shown here (lives in its own section). |
 | `frontend/src/lib/api.test.ts` | API client retry on 401 | 401 response → triggers refresh, retries original once; refresh fails → logs out & redirects to `/masuk`; double-401 doesn't loop. |
 | `frontend/src/lib/auth-context.test.tsx` | AuthContext provider | Initial unauth state; login() sets user + token; logout() clears; protected hook redirects when no user. |
+| `frontend/src/lib/goalMath.test.ts` | Goal suggestion math (per [frontend.md §12](./system-design/frontend.md)) | Mifflin–St Jeor BMR for male/female 28y/175cm/70kg golden cases; activity multipliers (sedentary…very_active); cutting/bulking/maintenance ±500 kcal adjustment; macro split sums to target kcal ±2%; missing profile field returns null instead of crashing. |
+| `frontend/src/lib/dateGroup.test.ts` | Day-grouping helper for HistoryPage (per [frontend.md §7.6](./system-design/frontend.md)) | `groupByDate` returns "Hari ini" / "Kemarin" / `weekday, dMMM` labels in `id-ID`; groups across day boundaries correctly; computes `totalKcal` per group; empty input returns `[]`; respects device timezone. |
+| `frontend/src/lib/imageResize.test.ts` | Client-side resize-before-upload (per [frontend.md §8.1](./system-design/frontend.md)) | Files ≤ 2 MB AND ≤ 1568 px pass through untouched; oversize JPEG downscaled to longest edge ≤ 1568 px at quality 0.85; PNG converted to JPEG; resize failure falls back to original file; output `File` carries a sane name + `image/jpeg` mime. |
 
 **Bahasa Indonesia copy assertions (per role doc rule #7):** every component test uses the actual Indonesian strings ("Sehat", "Sedang", "Tidak Sehat", "Sesuai", "Tertinggal", "Berlebih", "Menganalisis...", "Lengkapi profilmu dulu", "Atur tujuanmu", "Sisa hari ini", "Belum ada scan hari ini", "Email sudah terdaftar"). No English-string assertions on signed-in screens.
 
